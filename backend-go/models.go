@@ -89,6 +89,37 @@ type OrderDetailResponse struct {
 	Data    Order `json:"data"`
 }
 
+// User represents a user in the system
+type User struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	Role     string `json:"role"`
+}
+
+// LoginRequest represents login credentials
+type LoginRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// AuthResponse represents authentication response
+type AuthResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message"`
+	Data    struct {
+		User  User   `json:"user"`
+		Token string `json:"token"`
+	} `json:"data"`
+}
+
+// UserResponse represents user data response
+type UserResponse struct {
+	Success bool `json:"success"`
+	Data    User `json:"data"`
+}
+
 type ErrorResponse struct {
 	Success bool   `json:"success"`
 	Error   string `json:"error"`
@@ -183,3 +214,38 @@ var mockProducts = []Product{
 // In-memory storage for orders
 var orders = make(map[string]Order)
 var orderCounter = 1000
+
+// Mock user data
+var mockUsers = []User{
+	{
+		ID:       1,
+		Username: "admin",
+		Email:    "admin@vueshop.com",
+		Name:     "Admin User",
+		Role:     "admin",
+	},
+	{
+		ID:       2,
+		Username: "john",
+		Email:    "john@example.com",
+		Name:     "John Doe",
+		Role:     "customer",
+	},
+	{
+		ID:       3,
+		Username: "jane",
+		Email:    "jane@example.com",
+		Name:     "Jane Smith",
+		Role:     "customer",
+	},
+}
+
+// Mock user credentials (username -> password)
+var userCredentials = map[string]string{
+	"admin": "admin123",
+	"john":  "password123",
+	"jane":  "password456",
+}
+
+// In-memory storage for active sessions
+var activeSessions = make(map[string]User)

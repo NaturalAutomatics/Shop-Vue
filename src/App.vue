@@ -13,6 +13,15 @@
           <router-link to="/cart" class="nav-link">
             Cart ({{ cartItemCount }})
           </router-link>
+          <div v-if="isAuthenticated" class="auth-links">
+            <router-link to="/profile" class="nav-link">Profile</router-link>
+            <button @click="handleLogout" class="nav-link logout-btn">
+              Logout
+            </button>
+          </div>
+          <div v-else class="auth-links">
+            <router-link to="/login" class="nav-link">Login</router-link>
+          </div>
         </div>
       </div>
     </nav>
@@ -32,20 +41,42 @@
 
 <script>
 // Vue 3 Composition API - similar to Angular's dependency injection but more flexible
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCartStore } from './stores/cart'
+import { useAuthStore } from './stores/auth'
 
 export default {
   name: 'App',
   setup() {
-    // Using Pinia store (similar to Angular services but with reactive state)
+    const router = useRouter()
     const cartStore = useCartStore()
+    const authStore = useAuthStore()
     
     // Computed property (similar to Angular getters)
     const cartItemCount = computed(() => cartStore.itemCount)
+    const isAuthenticated = computed(() => authStore.isAuthenticated)
+    
+    const handleLogout = async () => {
+      try {
+        await authStore.logout()
+        router.push('/login')
+      } catch (error) {
+        console.error('Logout error:', error)
+      }
+    }
+    
+    // Check authentication status on app start
+    onMounted(async () => {
+      if (authStore.token && !authStore.user) {
+        await authStore.fetchCurrentUser()
+      }
+    })
     
     return {
-      cartItemCount
+      cartItemCount,
+      isAuthenticated,
+      handleLogout
     }
   }
 }
@@ -90,6 +121,20 @@ export default {
 
 .nav-link:hover {
   background-color: rgba(255,255,255,0.1);
+}
+
+.auth-links {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
 }
 
 .main-content {

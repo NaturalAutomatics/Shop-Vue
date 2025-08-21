@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Products from '../views/Products.vue'
 import Cart from '../views/Cart.vue'
+import Login from '../views/Login.vue'
+import Profile from '../views/Profile.vue'
 
 // Route configuration - similar to Angular's Routes array
 const routes = [
@@ -19,6 +21,16 @@ const routes = [
     path: '/cart',
     name: 'Cart',
     component: Cart
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: Login
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: Profile
   }
 ]
 

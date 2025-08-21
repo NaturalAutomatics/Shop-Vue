@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"sort"
@@ -280,4 +282,107 @@ func deleteOrder(c *gin.Context) {
 		Success: false,
 		Error:   "Order not found",
 	})
+}
+
+// generateToken generates a random token
+func generateToken() string {
+	bytes := make([]byte, 16)
+	rand.Read(bytes)
+	return hex.EncodeToString(bytes)
+}
+
+// login handles POST /api/auth/login
+func login(c *gin.Context) {
+	var loginReq LoginRequest
+	if err := c.ShouldBindJSON(&loginReq); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Invalid request",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	// Check if user exists and password is correct
+	expectedPassword, exists := userCredentials[loginReq.Username]
+	if !exists || expectedPassword != loginReq.Password {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Success: false,
+			Error:   "Invalid credentials",
+			Message: "Username or password is incorrect",
+		})
+		return
+	}
+
+	// Find user data
+	var user User
+	for _, u := range mockUsers {
+		if u.Username == loginReq.Username {
+			user = u
+			break
+		}
+	}
+
+	// Generate token
+	token := generateToken()
+	activeSessions[token] = user
+
+	response := AuthResponse{
+		Success: true,
+		Message: "Login successful",
+	}
+	response.Data.User = user
+	response.Data.Token = token
+
+	c.JSON(http.StatusOK, response)
+}
+
+// logout handles POST /api/auth/logout
+func logout(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token != "" {
+		// Remove "Bearer " prefix if present
+		if strings.HasPrefix(token, "Bearer ") {
+			token = token[7:]
+		}
+		delete(activeSessions, token)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Logout successful",
+	})
+}
+
+// getCurrentUser handles GET /api/auth/me
+func getCurrentUser(c *gin.Context) {
+	token := c.GetHeader("Authorization")
+	if token == "" {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Success: false,
+			Error:   "No token provided",
+		})
+		return
+	}
+
+	// Remove "Bearer " prefix if present
+	if strings.HasPrefix(token, "Bearer ") {
+		token = token[7:]
+	}
+
+	user, exists := activeSessions[token]
+	if !exists {
+		c.JSON(http.StatusUnauthorized, ErrorResponse{
+			Success: false,
+			Error:   "Invalid token",
+		})
+		return
+	}
+
+	response := UserResponse{
+		Success: true,
+		Data:    user,
+	}
+
+	c.JSON(http.StatusOK, response)
 }

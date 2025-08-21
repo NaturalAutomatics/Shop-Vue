@@ -20,7 +20,7 @@ func main() {
 	// CORS configuration
 	config := cors.DefaultConfig()
 	config.AllowOrigins = []string{
-		"http://localhost:3000", 
+		"http://localhost:3000",
 		"http://localhost:3001",
 		"http://127.0.0.1:3000",
 		"http://127.0.0.1:3001",
@@ -44,6 +44,14 @@ func main() {
 	// API routes
 	api := r.Group("/api")
 	{
+		// Auth routes
+		auth := api.Group("/auth")
+		{
+			auth.POST("/login", login)
+			auth.POST("/logout", logout)
+			auth.GET("/me", getCurrentUser)
+		}
+
 		// Product routes
 		api.GET("/products", getProducts)
 		api.GET("/products/:id", getProduct)
@@ -68,7 +76,7 @@ func main() {
 	log.Printf("📊 Health check: http://localhost:%s/health", port)
 	log.Printf("🛍️ API Base URL: http://localhost:%s/api", port)
 	log.Printf("🌐 CORS enabled for: http://localhost:3000")
-	
+
 	if err := r.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}

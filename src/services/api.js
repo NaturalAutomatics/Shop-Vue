@@ -2,9 +2,16 @@
 const API_BASE_URL = 'http://localhost:5000/api';
 
 class ApiService {
+  // Get auth token from localStorage
+  getAuthToken() {
+    return localStorage.getItem('token');
+  }
+
   // Generic request method
   async request(endpoint, options = {}) {
     const url = `${API_BASE_URL}${endpoint}`;
+    const token = this.getAuthToken();
+    
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -13,12 +20,19 @@ class ApiService {
       ...options
     };
 
+    // Add Authorization header if token exists
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+
     try {
       const response = await fetch(url, config);
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        const error = new Error(data.message || data.error || `HTTP error! status: ${response.status}`);
+        error.status = response.status;
+        throw error;
       }
 
       return data;
@@ -64,6 +78,24 @@ class ApiService {
       method: 'PUT',
       body: JSON.stringify({ status })
     });
+  }
+
+  // Authentication endpoints
+  async login(credentials) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials)
+    });
+  }
+
+  async logout() {
+    return this.request('/auth/logout', {
+      method: 'POST'
+    });
+  }
+
+  async getCurrentUser() {
+    return this.request('/auth/me');
   }
 }
 
