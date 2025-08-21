@@ -18,6 +18,7 @@
             <button @click="handleLogout" class="nav-link logout-btn">
               Logout
             </button>
+            <router-link v-if="authStore.isAdmin" to="/admin/database" class="nav-link admin-link">🗄️ Database Admin</router-link>
           </div>
           <div v-else class="auth-links">
             <router-link to="/login" class="nav-link">Login</router-link>

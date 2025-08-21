@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"net/http"
@@ -12,16 +13,76 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // getProducts handles GET /api/products
 func getProducts(c *gin.Context) {
-	// Get query parameters
+	// Prefer Postgres when available
+	if db != nil {
+		category := c.Query("category")
+		search := c.Query("search")
+		sortBy := c.Query("sort")
+
+		query := `SELECT id, name, description, price, category, image, stock FROM products`
+		var filters []string
+		var args []interface{}
+		arg := 1
+		if category != "" && category != "all" {
+			filters = append(filters, fmt.Sprintf("category = $%d", arg))
+			args = append(args, category)
+			arg++
+		}
+		if search != "" {
+			filters = append(filters, fmt.Sprintf("(LOWER(name) LIKE $%d OR LOWER(description) LIKE $%d)", arg, arg+1))
+			like := "%" + strings.ToLower(search) + "%"
+			args = append(args, like, like)
+			arg += 2
+		}
+		if len(filters) > 0 {
+			query += " WHERE " + strings.Join(filters, " AND ")
+		}
+		switch sortBy {
+		case "price-asc":
+			query += " ORDER BY price ASC"
+		case "price-desc":
+			query += " ORDER BY price DESC"
+		case "name-asc":
+			query += " ORDER BY name ASC"
+		case "name-desc":
+			query += " ORDER BY name DESC"
+		}
+
+		rows, err := db.Query(query, args...)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+			return
+		}
+		defer rows.Close()
+
+		products := make([]Product, 0)
+		for rows.Next() {
+			var p Product
+			if err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.Price, &p.Category, &p.Image, &p.Stock); err != nil {
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+				return
+			}
+			products = append(products, p)
+		}
+		if err := rows.Err(); err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, ProductsResponse{Success: true, Data: products, Total: len(products)})
+		return
+	}
+
+	// Fallback to mock data
 	category := c.Query("category")
 	search := c.Query("search")
 	sortBy := c.Query("sort")
 
-	// Filter products
 	filteredProducts := make([]Product, 0)
 	for _, product := range mockProducts {
 		// Filter by category
@@ -83,7 +144,22 @@ func getProduct(c *gin.Context) {
 		return
 	}
 
-	// Find product by ID
+	if db != nil {
+		var p Product
+		row := db.QueryRow(`SELECT id, name, description, price, category, image, stock FROM products WHERE id = $1`, id)
+		if err := row.Scan(&p.ID, &p.Name, &p.Description, &p.Price, &p.Category, &p.Image, &p.Stock); err != nil {
+			if err == sql.ErrNoRows {
+				c.JSON(http.StatusNotFound, ErrorResponse{Success: false, Error: "Product not found"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, ProductResponse{Success: true, Data: p})
+		return
+	}
+
+	// Fallback mock
 	for _, product := range mockProducts {
 		if product.ID == id {
 			response := ProductResponse{
@@ -103,7 +179,27 @@ func getProduct(c *gin.Context) {
 
 // getCategories handles GET /api/products/categories
 func getCategories(c *gin.Context) {
-	// Get unique categories
+	if db != nil {
+		rows, err := db.Query(`SELECT DISTINCT category FROM products ORDER BY category ASC`)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+			return
+		}
+		defer rows.Close()
+		cats := make([]string, 0)
+		for rows.Next() {
+			var cat string
+			if err := rows.Scan(&cat); err != nil {
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+				return
+			}
+			cats = append(cats, cat)
+		}
+		c.JSON(http.StatusOK, CategoriesResponse{Success: true, Data: cats})
+		return
+	}
+
+	// Fallback mock
 	categoryMap := make(map[string]bool)
 	for _, product := range mockProducts {
 		categoryMap[product.Category] = true
@@ -114,7 +210,6 @@ func getCategories(c *gin.Context) {
 		categories = append(categories, category)
 	}
 
-	// Sort categories alphabetically
 	sort.Strings(categories)
 
 	response := CategoriesResponse{
@@ -137,8 +232,86 @@ func createOrder(c *gin.Context) {
 		return
 	}
 
+	if db != nil {
+		// Validate products exist and stock
+		for _, item := range order.Items {
+			var stock int
+			row := db.QueryRow(`SELECT stock FROM products WHERE id = $1`, item.ID)
+			if err := row.Scan(&stock); err != nil {
+				if err == sql.ErrNoRows {
+					c.JSON(http.StatusBadRequest, ErrorResponse{Success: false, Error: "Product not found", Message: fmt.Sprintf("Product with ID %d does not exist", item.ID)})
+					return
+				}
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+				return
+			}
+			if stock < item.Quantity {
+				c.JSON(http.StatusBadRequest, ErrorResponse{Success: false, Error: "Insufficient stock", Message: fmt.Sprintf("Product %d only has %d items in stock", item.ID, stock)})
+				return
+			}
+		}
+
+		// Create order
+		order.ID = uuid.New().String()
+		orderCounter++
+		order.OrderNumber = fmt.Sprintf("VUE-%d", orderCounter)
+		order.Status = "pending"
+		order.CreatedAt = time.Now()
+		order.UpdatedAt = time.Now()
+
+		tx, err := db.Begin()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+			return
+		}
+		defer tx.Rollback()
+
+		_, err = tx.Exec(`INSERT INTO orders (id, order_number, customer_name, customer_email, customer_address, subtotal, shipping, tax, total, status, created_at, updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+			order.ID, order.OrderNumber, order.Customer.Name, order.Customer.Email, order.Customer.Address, order.Subtotal, order.Shipping, order.Tax, order.Total, order.Status, order.CreatedAt, order.UpdatedAt,
+		)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+			return
+		}
+		for _, item := range order.Items {
+			_, err := tx.Exec(`INSERT INTO order_items (order_id, product_id, name, price, quantity) VALUES ($1,$2,$3,$4,$5)`, order.ID, item.ID, item.Name, item.Price, item.Quantity)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+				return
+			}
+			_, err = tx.Exec(`UPDATE products SET stock = stock - $1 WHERE id = $2`, item.Quantity, item.ID)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+				return
+			}
+		}
+		if err := tx.Commit(); err != nil {
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+			return
+		}
+
+		response := OrderResponse{Success: true, Message: "Order created successfully"}
+		response.Data.OrderID = order.ID
+		response.Data.OrderNumber = order.OrderNumber
+		response.Data.Total = order.Total
+		response.Data.Status = order.Status
+		c.JSON(http.StatusCreated, response)
+		return
+	}
+
+	// Fallback to mock logic
+	var fallbackOrder Order
+	if err := c.ShouldBindJSON(&fallbackOrder); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Validation failed",
+			Message: err.Error(),
+		})
+		return
+	}
+
 	// Validate that all products exist and have sufficient stock
-	for _, item := range order.Items {
+	for _, item := range fallbackOrder.Items {
 		found := false
 		for _, product := range mockProducts {
 			if product.ID == item.ID {
@@ -165,25 +338,25 @@ func createOrder(c *gin.Context) {
 	}
 
 	// Generate order ID and number
-	order.ID = uuid.New().String()
+	fallbackOrder.ID = uuid.New().String()
 	orderCounter++
-	order.OrderNumber = fmt.Sprintf("VUE-%d", orderCounter)
-	order.Status = "pending"
-	order.CreatedAt = time.Now()
-	order.UpdatedAt = time.Now()
+	fallbackOrder.OrderNumber = fmt.Sprintf("VUE-%d", orderCounter)
+	fallbackOrder.Status = "pending"
+	fallbackOrder.CreatedAt = time.Now()
+	fallbackOrder.UpdatedAt = time.Now()
 
 	// Store order
-	orders[order.ID] = order
+	orders[fallbackOrder.ID] = fallbackOrder
 
 	// Prepare response
 	response := OrderResponse{
 		Success: true,
 		Message: "Order created successfully",
 	}
-	response.Data.OrderID = order.ID
-	response.Data.OrderNumber = order.OrderNumber
-	response.Data.Total = order.Total
-	response.Data.Status = order.Status
+	response.Data.OrderID = fallbackOrder.ID
+	response.Data.OrderNumber = fallbackOrder.OrderNumber
+	response.Data.Total = fallbackOrder.Total
+	response.Data.Status = fallbackOrder.Status
 
 	c.JSON(http.StatusCreated, response)
 }
@@ -303,7 +476,35 @@ func login(c *gin.Context) {
 		return
 	}
 
-	// Check if user exists and password is correct
+	if db != nil {
+		var (
+			id int
+			username, email, name, role, passwordHash string
+		)
+		row := db.QueryRow(`SELECT id, username, email, name, role, password_hash FROM users WHERE username = $1`, loginReq.Username)
+		if err := row.Scan(&id, &username, &email, &name, &role, &passwordHash); err != nil {
+			if err == sql.ErrNoRows {
+				c.JSON(http.StatusUnauthorized, ErrorResponse{Success: false, Error: "Invalid credentials"})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, ErrorResponse{Success: false, Error: "DB error", Message: err.Error()})
+			return
+		}
+		if bcrypt.CompareHashAndPassword([]byte(passwordHash), []byte(loginReq.Password)) != nil {
+			c.JSON(http.StatusUnauthorized, ErrorResponse{Success: false, Error: "Invalid credentials"})
+			return
+		}
+		user := User{ID: id, Username: username, Email: email, Name: name, Role: role}
+		token := generateToken()
+		activeSessions[token] = user
+		resp := AuthResponse{Success: true, Message: "Login successful"}
+		resp.Data.User = user
+		resp.Data.Token = token
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	// Fallback to mock credentials
 	expectedPassword, exists := userCredentials[loginReq.Username]
 	if !exists || expectedPassword != loginReq.Password {
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
@@ -313,8 +514,6 @@ func login(c *gin.Context) {
 		})
 		return
 	}
-
-	// Find user data
 	var user User
 	for _, u := range mockUsers {
 		if u.Username == loginReq.Username {
@@ -322,18 +521,11 @@ func login(c *gin.Context) {
 			break
 		}
 	}
-
-	// Generate token
 	token := generateToken()
 	activeSessions[token] = user
-
-	response := AuthResponse{
-		Success: true,
-		Message: "Login successful",
-	}
+	response := AuthResponse{Success: true, Message: "Login successful"}
 	response.Data.User = user
 	response.Data.Token = token
-
 	c.JSON(http.StatusOK, response)
 }
 

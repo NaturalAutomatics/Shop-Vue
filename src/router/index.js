@@ -4,6 +4,7 @@ import Products from '../views/Products.vue'
 import Cart from '../views/Cart.vue'
 import Login from '../views/Login.vue'
 import Profile from '../views/Profile.vue'
+import DatabaseAdmin from '../views/DatabaseAdmin.vue'
 
 // Route configuration - similar to Angular's Routes array
 const routes = [
@@ -31,6 +32,11 @@ const routes = [
     path: '/profile',
     name: 'Profile',
     component: Profile
+  },
+  {
+    path: '/admin/database',
+    name: 'DatabaseAdmin',
+    component: DatabaseAdmin
   }
 ]
 

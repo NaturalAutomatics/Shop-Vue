@@ -14,6 +14,19 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
+	// Connect to Postgres (if configured via env)
+	if err := connectPostgres(); err != nil {
+		log.Printf("Postgres not connected: %v (set PG* env vars to enable DB)", err)
+	} else {
+		if err := migratePostgres(); err != nil {
+			log.Printf("Postgres migration failed: %v", err)
+		} else if err := seedPostgresIfEmpty(); err != nil {
+			log.Printf("Postgres seed failed: %v", err)
+		} else {
+			log.Printf("Postgres connected and ready")
+		}
+	}
+
 	// Create router
 	r := gin.Default()
 
@@ -63,6 +76,19 @@ func main() {
 		api.GET("/orders/:orderNumber", getOrderByNumber)
 		api.PUT("/orders/:orderId/status", updateOrderStatus)
 		api.DELETE("/orders/:orderId", deleteOrder)
+
+		// Admin routes
+		admin := api.Group("/admin")
+		{
+			admin.POST("/test-connection", testConnection)
+			admin.GET("/stats", getStats)
+			admin.GET("/users", getAllUsers)
+			admin.POST("/seed", seedDatabase)
+			admin.POST("/clear", clearDatabase)
+			admin.GET("/export", exportData)
+			admin.DELETE("/products/:id", deleteProduct)
+			admin.DELETE("/users/:id", deleteUser)
+		}
 	}
 
 	// Get port from environment or use default
