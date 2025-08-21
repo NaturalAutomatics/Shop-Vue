@@ -18,21 +18,76 @@ This series of lessons covers:
 ### Prerequisites
 - Node.js (version 16 or higher)
 - npm or yarn package manager
+- Go 1.21 or higher (for backend)
 
-### Installation
+### Frontend Setup
 
-1. **Install dependencies:**
+1. **Install frontend dependencies:**
    ```bash
    npm install
    ```
 
-2. **Start the development server:**
+2. **Start the frontend development server:**
    ```bash
    npm run dev
    ```
 
 3. **Open your browser:**
    Navigate to `http://localhost:3000`
+
+### Backend Setup
+
+The project includes a Go backend API. To start the backend:
+
+1. **Navigate to the backend directory:**
+   ```bash
+   cd backend-go
+   ```
+
+2. **Install Go dependencies:**
+   ```bash
+   go mod tidy
+   ```
+
+3. **Start the backend server:**
+   ```bash
+   go run .
+   ```
+
+4. **Verify backend is running:**
+   - Health check: http://localhost:5000/health
+   - API Base: http://localhost:5000/api
+
+### Running Both Parts
+
+#### Option 1: Using the Startup Script (Recommended)
+Run both frontend and backend with a single command:
+
+```bash
+# Using npm script
+npm start
+
+# Or using the batch file directly
+start-app.bat
+
+# Or using PowerShell script directly
+powershell -ExecutionPolicy Bypass -File start-app.ps1
+```
+
+#### Option 2: Manual Startup (Two Terminal Windows)
+
+**Terminal 1 (Frontend):**
+```bash
+npm run dev
+```
+
+**Terminal 2 (Backend):**
+```bash
+cd backend-go
+go run .
+```
+
+The frontend will be available at `http://localhost:3000` and the backend API at `http://localhost:5000`.
 
 ## 📚 Lesson Structure
 
@@ -91,9 +146,13 @@ This series of lessons covers:
 
 ## 🛠️ Development Commands
 
+### Frontend Commands
 ```bash
 # Start development server
 npm run dev
+
+# Start both frontend and backend (recommended)
+npm start
 
 # Build for production
 npm run build
@@ -103,6 +162,27 @@ npm run preview
 
 # Lint code
 npm run lint
+```
+
+### Backend Commands
+```bash
+# Navigate to backend directory
+cd backend-go
+
+# Install dependencies
+go mod tidy
+
+# Start development server
+go run .
+
+# Build for production
+go build -o vue-shop-backend .
+
+# Run tests
+go test ./...
+
+# Format code
+go fmt ./...
 ```
 
 ## 📁 Project Structure
