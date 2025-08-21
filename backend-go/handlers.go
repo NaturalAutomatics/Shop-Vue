@@ -478,7 +478,7 @@ func login(c *gin.Context) {
 
 	if db != nil {
 		var (
-			id int
+			id                                        int
 			username, email, name, role, passwordHash string
 		)
 		row := db.QueryRow(`SELECT id, username, email, name, role, password_hash FROM users WHERE username = $1`, loginReq.Username)
