@@ -162,4 +162,55 @@ export default {
   padding: 1rem;
   border-top: 1px solid #e9ecef;
 }
+
+/* Responsive header layout: brand on first row, menu on second */
+@media (max-width: 1024px) {
+  .nav-container {
+    max-width: 100%;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .nav-brand {
+    display: block;
+    width: 100%;
+    text-align: center;
+  }
+
+  .nav-links {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .auth-links {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem 0.75rem;
+  }
+
+  .nav-link,
+  .logout-btn {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .main-content {
+    padding: 1rem;
+  }
+}
+
+/* Tighten distribution on very small screens to fill width */
+@media (max-width: 600px) {
+  .nav-links,
+  .auth-links {
+    justify-content: space-between;
+  }
+}
 </style>

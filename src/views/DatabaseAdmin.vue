@@ -238,7 +238,10 @@ const showNotification = (message, type = 'info') => {
 const testConnection = async () => {
   loading.value = true
   try {
-    const response = await apiService.request('/admin/test-connection', 'POST', connection)
+    const response = await apiService.request('/admin/test-connection', {
+      method: 'POST',
+      body: JSON.stringify(connection)
+    })
     if (response.success) {
       dbConnected.value = true
       showNotification('Database connection successful!', 'success')
@@ -257,7 +260,7 @@ const testConnection = async () => {
 const refreshStats = async () => {
   loading.value = true
   try {
-    const response = await apiService.request('/admin/stats', 'GET')
+    const response = await apiService.request('/admin/stats')
     if (response.success) {
       Object.assign(stats, response.data)
     }
@@ -270,7 +273,7 @@ const refreshStats = async () => {
 
 const refreshProducts = async () => {
   try {
-    const response = await apiService.request('/products', 'GET')
+    const response = await apiService.request('/products')
     if (response.success) {
       products.value = response.data
     }
@@ -281,7 +284,7 @@ const refreshProducts = async () => {
 
 const refreshUsers = async () => {
   try {
-    const response = await apiService.request('/admin/users', 'GET')
+    const response = await apiService.request('/admin/users')
     if (response.success) {
       users.value = response.data
     }
@@ -295,7 +298,7 @@ const seedDatabase = async () => {
   
   loading.value = true
   try {
-    const response = await apiService.request('/admin/seed', 'POST')
+    const response = await apiService.request('/admin/seed', { method: 'POST' })
     if (response.success) {
       showNotification('Database seeded successfully!', 'success')
       await refreshStats()
@@ -314,7 +317,7 @@ const clearDatabase = async () => {
   
   loading.value = true
   try {
-    const response = await apiService.request('/admin/clear', 'POST')
+    const response = await apiService.request('/admin/clear', { method: 'POST' })
     if (response.success) {
       showNotification('Database cleared successfully!', 'success')
       await refreshStats()
@@ -330,7 +333,7 @@ const clearDatabase = async () => {
 
 const exportData = async () => {
   try {
-    const response = await apiService.request('/admin/export', 'GET')
+    const response = await apiService.request('/admin/export')
     if (response.success) {
       // Create and download file
       const blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' })
@@ -351,8 +354,40 @@ const backupDatabase = async () => {
   showNotification('Backup functionality requires pgAdmin or manual pg_dump', 'info')
 }
 
-const openPgAdmin = () => {
-  window.open('http://localhost:5050', '_blank')
+// Helper: fetch with timeout
+const fetchWithTimeout = (url, timeoutMs = 1500) => {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController()
+    const id = setTimeout(() => {
+      controller.abort()
+    }, timeoutMs)
+    fetch(url, { signal: controller.signal })
+      .then((res) => {
+        clearTimeout(id)
+        resolve(res)
+      })
+      .catch((err) => {
+        clearTimeout(id)
+        reject(err)
+      })
+  })
+}
+
+const openPgAdmin = async () => {
+  // Try web pgAdmin on port 5050 first (if user runs it via Docker)
+  try {
+    const res = await fetchWithTimeout('http://localhost:5050', 1200)
+    if (res && res.ok) {
+      window.open('http://localhost:5050', '_blank')
+      return
+    }
+  } catch (_) {}
+
+  // Fall back: instruct to open desktop pgAdmin 4 on Windows
+  showNotification(
+    'pgAdmin web not detected on :5050. Open pgAdmin 4 desktop from Start Menu or run Docker web pgAdmin.',
+    'info'
+  )
 }
 
 const addProduct = () => {
@@ -367,7 +402,7 @@ const deleteProduct = async (id) => {
   if (!confirm('Are you sure you want to delete this product?')) return
   
   try {
-    const response = await apiService.request(`/admin/products/${id}`, 'DELETE')
+    const response = await apiService.request(`/admin/products/${id}`, { method: 'DELETE' })
     if (response.success) {
       showNotification('Product deleted successfully!', 'success')
       await refreshProducts()
@@ -390,7 +425,7 @@ const deleteUser = async (id) => {
   if (!confirm('Are you sure you want to delete this user?')) return
   
   try {
-    const response = await apiService.request(`/admin/users/${id}`, 'DELETE')
+    const response = await apiService.request(`/admin/users/${id}`, { method: 'DELETE' })
     if (response.success) {
       showNotification('User deleted successfully!', 'success')
       await refreshUsers()
@@ -485,9 +520,16 @@ onMounted(async () => {
 
 .admin-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr; /* mobile/small tablets: single column */
   gap: 20px;
   margin-bottom: 40px;
+}
+
+/* Two columns on larger screens */
+@media (min-width: 1024px) {
+  .admin-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .stats-card, .actions-card, .settings-card, .pgadmin-card {

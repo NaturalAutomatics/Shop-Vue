@@ -65,20 +65,57 @@
         </div>
       </div>
     </div>
+
+    <!-- Categories section -->
+    <div class="categories">
+      <h2>Shop by Category</h2>
+      <div v-if="categoriesError" class="categories-error">{{ categoriesError }}</div>
+      <div v-else class="categories-grid">
+        <div v-if="loadingCategories" class="category-skeleton" v-for="i in 6" :key="i"></div>
+        <div v-else v-for="cat in categories" :key="cat" class="category-card">
+          <router-link :to="{ name: 'Products' }" class="category-link">{{ cat }}</router-link>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import apiService from '../services/api'
 
 export default {
   name: 'Home',
   setup() {
     // Reactive state - similar to Angular's component properties
     const showLessonInfo = ref(false)
-    
+    const categories = ref([])
+    const loadingCategories = ref(false)
+    const categoriesError = ref('')
+
+    const loadCategories = async () => {
+      loadingCategories.value = true
+      categoriesError.value = ''
+      try {
+        const res = await apiService.getCategories()
+        categories.value = res.data || []
+      } catch (e) {
+        categoriesError.value = 'Failed to load categories'
+        console.error('Categories load error:', e)
+      } finally {
+        loadingCategories.value = false
+      }
+    }
+
+    onMounted(() => {
+      loadCategories()
+    })
+
     return {
-      showLessonInfo
+      showLessonInfo,
+      categories,
+      loadingCategories,
+      categoriesError
     }
   }
 }
@@ -224,6 +261,64 @@ export default {
 .feature-card p {
   color: #7f8c8d;
   line-height: 1.6;
+}
+
+/* Categories */
+.categories {
+  margin-top: 3rem;
+}
+
+.categories h2 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+.categories-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .categories-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .categories-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.category-card {
+  background: white;
+  border-radius: 10px;
+  border: 1px solid #e9ecef;
+  padding: 1rem;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.category-link {
+  display: block;
+  text-decoration: none;
+  color: #667eea;
+  font-weight: 600;
+}
+
+.category-skeleton {
+  height: 48px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e6e6e6 37%, #f0f0f0 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
 }
 
 @media (max-width: 768px) {
