@@ -35,8 +35,10 @@ func main() {
 	config.AllowOrigins = []string{
 		"http://localhost:3000",
 		"http://localhost:3001",
+		"http://localhost:3002",
 		"http://127.0.0.1:3000",
 		"http://127.0.0.1:3001",
+		"http://127.0.0.1:3002",
 	}
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
@@ -101,7 +103,7 @@ func main() {
 	log.Printf("🚀 Vue Shop Backend (Go) running on port %s", port)
 	log.Printf("📊 Health check: http://localhost:%s/health", port)
 	log.Printf("🛍️ API Base URL: http://localhost:%s/api", port)
-	log.Printf("🌐 CORS enabled for: http://localhost:3000")
+	log.Printf("🌐 CORS enabled for: http://localhost:3000, 3001, 3002")
 
 	if err := r.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)

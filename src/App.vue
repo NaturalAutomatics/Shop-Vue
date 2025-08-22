@@ -42,7 +42,7 @@
 
 <script>
 // Vue 3 Composition API - similar to Angular's dependency injection but more flexible
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from './stores/cart'
 import { useAuthStore } from './stores/auth'
@@ -69,15 +69,26 @@ export default {
     
     // Check authentication status on app start
     onMounted(async () => {
+      console.log('App mounted, auth state:', { 
+        token: authStore.token, 
+        user: authStore.user, 
+        isAuthenticated: authStore.isAuthenticated 
+      })
       if (authStore.token && !authStore.user) {
         await authStore.fetchCurrentUser()
       }
     })
     
+    // Watch for authentication state changes
+    watch(() => authStore.isAuthenticated, (newValue, oldValue) => {
+      console.log('Auth state changed:', { oldValue, newValue, token: authStore.token, user: authStore.user })
+    })
+    
     return {
       cartItemCount,
       isAuthenticated,
-      handleLogout
+      handleLogout,
+      authStore
     }
   }
 }

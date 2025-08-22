@@ -10,7 +10,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref(null)
 
   // Getters
-  const isAuthenticated = computed(() => !!token.value && !!user.value)
+  const isAuthenticated = computed(() => !!token.value)
   const isAdmin = computed(() => user.value?.role === 'admin')
 
   // Actions
@@ -20,8 +20,11 @@ export const useAuthStore = defineStore('auth', () => {
     
     try {
       const response = await apiService.login(credentials)
+      console.log('Login response:', response)
       user.value = response.data.user
       token.value = response.data.token
+      
+      console.log('Auth store after login:', { user: user.value, token: token.value, isAuthenticated: isAuthenticated.value })
       
       // Store token in localStorage
       localStorage.setItem('token', token.value)
