@@ -13,6 +13,18 @@
       </div>
     </div>
 
+        <!-- Categories section -->
+        <div class="categories">
+      <h2>Shop by Category</h2>
+      <div v-if="categoriesError" class="categories-error">{{ categoriesError }}</div>
+      <div v-else class="categories-grid">
+        <div v-if="loadingCategories" class="category-skeleton" v-for="i in 6" :key="i"></div>
+        <div v-else v-for="cat in categories" :key="cat" class="category-card">
+          <router-link :to="{ name: 'Products' }" class="category-link">{{ cat }}</router-link>
+        </div>
+      </div>
+    </div>
+
     <!-- Lesson information section -->
     <div v-if="showLessonInfo" class="lesson-info">
       <h2>Vue.js vs Angular - Key Differences</h2>
@@ -66,17 +78,7 @@
       </div>
     </div>
 
-    <!-- Categories section -->
-    <div class="categories">
-      <h2>Shop by Category</h2>
-      <div v-if="categoriesError" class="categories-error">{{ categoriesError }}</div>
-      <div v-else class="categories-grid">
-        <div v-if="loadingCategories" class="category-skeleton" v-for="i in 6" :key="i"></div>
-        <div v-else v-for="cat in categories" :key="cat" class="category-card">
-          <router-link :to="{ name: 'Products' }" class="category-link">{{ cat }}</router-link>
-        </div>
-      </div>
-    </div>
+
   </div>
 </template>
 

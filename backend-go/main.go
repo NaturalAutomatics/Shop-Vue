@@ -3,10 +3,60 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+// Define metrics
+var (
+	httpRequestsTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Name: "http_requests_total",
+		Help: "Total number of HTTP requests",
+	}, []string{"method", "path", "status_code"})
+
+	httpRequestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Name:    "http_request_duration_seconds",
+		Help:    "Duration of HTTP requests in seconds",
+		Buckets: []float64{0.1, 0.5, 1, 2, 5},
+	}, []string{"method", "path"})
+
+	httpRequestsInProgress = promauto.NewGauge(prometheus.GaugeOpts{
+		Name: "http_requests_in_progress",
+		Help: "Current number of HTTP requests in progress",
+	})
+)
+
+// PrometheusMiddleware tracks request metrics
+func PrometheusMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		start := time.Now()
+		path := c.FullPath()
+		if path == "" {
+			path = "unknown"
+		}
+
+		// Increment in-progress requests
+		httpRequestsInProgress.Inc()
+
+		// Process request
+		c.Next()
+
+		// Record metrics after request is processed
+		duration := time.Since(start).Seconds()
+		statusCode := c.Writer.Status()
+
+		httpRequestDuration.WithLabelValues(c.Request.Method, path).Observe(duration)
+		httpRequestsTotal.WithLabelValues(c.Request.Method, path, string(statusCode)).Inc()
+
+		// Decrement in-progress requests
+		httpRequestsInProgress.Dec()
+	}
+}
 
 func main() {
 	// Set Gin mode
@@ -29,6 +79,9 @@ func main() {
 
 	// Create router
 	r := gin.Default()
+
+	// Add Prometheus middleware
+	r.Use(PrometheusMiddleware())
 
 	// CORS configuration
 	config := cors.DefaultConfig()
@@ -55,6 +108,9 @@ func main() {
 			"version":   "1.0.0",
 		})
 	})
+
+	// Add Prometheus metrics endpoint
+	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
 	// API routes
 	api := r.Group("/api")
@@ -102,6 +158,7 @@ func main() {
 	// Start server
 	log.Printf("🚀 Vue Shop Backend (Go) running on port %s", port)
 	log.Printf("📊 Health check: http://localhost:%s/health", port)
+	log.Printf("📈 Metrics endpoint: http://localhost:%s/metrics", port)
 	log.Printf("🛍️ API Base URL: http://localhost:%s/api", port)
 	log.Printf("🌐 CORS enabled for: http://localhost:3000, 3001, 3002")
 
