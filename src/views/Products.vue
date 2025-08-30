@@ -53,7 +53,7 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useCartStore } from '../stores/cart'
 import apiService from '../services/api'
 
@@ -69,6 +69,7 @@ export default {
     
     // Router and Store
     const router = useRouter()
+    const route = useRoute()
     const cartStore = useCartStore()
     
     // Computed properties
@@ -115,6 +116,10 @@ export default {
     
     // Lifecycle hook - similar to Angular's ngOnInit
     onMounted(() => {
+      // Set category from URL query parameter
+      if (route.query.category) {
+        selectedCategory.value = route.query.category
+      }
       fetchProducts()
     })
     

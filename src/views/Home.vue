@@ -20,7 +20,7 @@
       <div v-else class="categories-grid">
         <div v-if="loadingCategories" class="category-skeleton" v-for="i in 6" :key="i"></div>
         <div v-else v-for="cat in categories" :key="cat" class="category-card">
-          <router-link :to="{ name: 'Products' }" class="category-link">{{ cat }}</router-link>
+          <router-link :to="{ name: 'Products', query: { category: cat } }" class="category-link">{{ cat }}</router-link>
         </div>
       </div>
     </div>
