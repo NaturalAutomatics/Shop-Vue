@@ -299,65 +299,21 @@ func createOrder(c *gin.Context) {
 		return
 	}
 
-	// Fallback to mock logic
-	var fallbackOrder Order
-	if err := c.ShouldBindJSON(&fallbackOrder); err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{
-			Success: false,
-			Error:   "Validation failed",
-			Message: err.Error(),
-		})
-		return
-	}
-
-	// Validate that all products exist and have sufficient stock
-	for _, item := range fallbackOrder.Items {
-		found := false
-		for _, product := range mockProducts {
-			if product.ID == item.ID {
-				if product.Stock < item.Quantity {
-					c.JSON(http.StatusBadRequest, ErrorResponse{
-						Success: false,
-						Error:   "Insufficient stock",
-						Message: fmt.Sprintf("Product %s only has %d items in stock", product.Name, product.Stock),
-					})
-					return
-				}
-				found = true
-				break
-			}
-		}
-		if !found {
-			c.JSON(http.StatusBadRequest, ErrorResponse{
-				Success: false,
-				Error:   "Product not found",
-				Message: fmt.Sprintf("Product with ID %d does not exist", item.ID),
-			})
-			return
-		}
-	}
-
-	// Generate order ID and number
-	fallbackOrder.ID = uuid.New().String()
+	// Fallback mock logic
 	orderCounter++
-	fallbackOrder.OrderNumber = fmt.Sprintf("VUE-%d", orderCounter)
-	fallbackOrder.Status = "pending"
-	fallbackOrder.CreatedAt = time.Now()
-	fallbackOrder.UpdatedAt = time.Now()
+	order.ID = uuid.New().String()
+	order.OrderNumber = fmt.Sprintf("VUE-%d", orderCounter)
+	order.Status = "pending"
+	order.CreatedAt = time.Now()
+	order.UpdatedAt = time.Now()
 
-	// Store order
-	orders[fallbackOrder.ID] = fallbackOrder
+	orders[order.ID] = order
 
-	// Prepare response
-	response := OrderResponse{
-		Success: true,
-		Message: "Order created successfully",
-	}
-	response.Data.OrderID = fallbackOrder.ID
-	response.Data.OrderNumber = fallbackOrder.OrderNumber
-	response.Data.Total = fallbackOrder.Total
-	response.Data.Status = fallbackOrder.Status
-
+	response := OrderResponse{Success: true, Message: "Order created successfully"}
+	response.Data.OrderID = order.ID
+	response.Data.OrderNumber = order.OrderNumber
+	response.Data.Total = order.Total
+	response.Data.Status = order.Status
 	c.JSON(http.StatusCreated, response)
 }
 

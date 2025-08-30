@@ -5,7 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
@@ -83,20 +82,20 @@ func main() {
 	// Add Prometheus middleware
 	r.Use(PrometheusMiddleware())
 
-	// CORS configuration
-	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{
-		"http://localhost:3000",
-		"http://localhost:3001",
-		"http://localhost:3002",
-		"http://127.0.0.1:3000",
-		"http://127.0.0.1:3001",
-		"http://127.0.0.1:3002",
-	}
-	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	config.AllowHeaders = []string{"Origin", "Content-Type", "Accept", "Authorization"}
-	config.AllowCredentials = true
-	r.Use(cors.New(config))
+	// Manual CORS middleware
+	r.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Accept, Authorization, X-Requested-With")
+		c.Header("Access-Control-Max-Age", "86400")
+		
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		
+		c.Next()
+	})
 
 	// Health check endpoint
 	r.GET("/health", func(c *gin.Context) {
@@ -144,6 +143,8 @@ func main() {
 			admin.POST("/seed", seedDatabase)
 			admin.POST("/clear", clearDatabase)
 			admin.GET("/export", exportData)
+			admin.POST("/products", createProduct)
+			admin.PUT("/products/:id", updateProduct)
 			admin.DELETE("/products/:id", deleteProduct)
 			admin.DELETE("/users/:id", deleteUser)
 		}

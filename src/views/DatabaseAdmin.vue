@@ -192,12 +192,22 @@
     <div v-if="notification.show" class="notification" :class="notification.type">
       {{ notification.message }}
     </div>
+
+    <!-- Product Form Modal -->
+    <ProductForm
+      v-if="showProductForm"
+      :product="editingProduct"
+      :is-edit="isEditMode"
+      @close="closeProductForm"
+      @success="onProductSuccess"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import apiService from '../services/api.js'
+import ProductForm from './ProductForm.vue'
 
 // Reactive state
 const loading = ref(false)
@@ -390,12 +400,36 @@ const openPgAdmin = async () => {
   )
 }
 
+// Product form state
+const showProductForm = ref(false)
+const editingProduct = ref(null)
+const isEditMode = ref(false)
+
 const addProduct = () => {
-  showNotification('Add product functionality coming soon!', 'info')
+  editingProduct.value = null
+  isEditMode.value = false
+  showProductForm.value = true
 }
 
 const editProduct = (product) => {
-  showNotification(`Edit product ${product.name} - coming soon!`, 'info')
+  editingProduct.value = { ...product }
+  isEditMode.value = true
+  showProductForm.value = true
+}
+
+const closeProductForm = () => {
+  showProductForm.value = false
+  editingProduct.value = null
+  isEditMode.value = false
+}
+
+const onProductSuccess = async (product) => {
+  showNotification(
+    isEditMode.value ? 'Product updated successfully!' : 'Product added successfully!',
+    'success'
+  )
+  await refreshProducts()
+  await refreshStats()
 }
 
 const deleteProduct = async (id) => {

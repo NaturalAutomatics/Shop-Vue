@@ -429,3 +429,101 @@ func deleteUser(c *gin.Context) {
 		"message": "User deleted successfully",
 	})
 }
+
+// createProduct handles POST /api/admin/products
+func createProduct(c *gin.Context) {
+	if db == nil {
+		c.JSON(http.StatusServiceUnavailable, ErrorResponse{
+			Success: false,
+			Error:   "Database not connected",
+		})
+		return
+	}
+
+	var product Product
+	if err := c.ShouldBindJSON(&product); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Invalid product data",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	var id int
+	err := db.QueryRow(`INSERT INTO products (name, description, price, category, image, stock) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+		product.Name, product.Description, product.Price, product.Category, product.Image, product.Stock).Scan(&id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Success: false,
+			Error:   "Failed to create product",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	product.ID = id
+	c.JSON(http.StatusCreated, gin.H{
+		"success": true,
+		"data":    product,
+		"message": "Product created successfully",
+	})
+}
+
+// updateProduct handles PUT /api/admin/products/:id
+func updateProduct(c *gin.Context) {
+	if db == nil {
+		c.JSON(http.StatusServiceUnavailable, ErrorResponse{
+			Success: false,
+			Error:   "Database not connected",
+		})
+		return
+	}
+
+	idStr := c.Param("id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Invalid product ID",
+		})
+		return
+	}
+
+	var product Product
+	if err := c.ShouldBindJSON(&product); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Success: false,
+			Error:   "Invalid product data",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	result, err := db.Exec(`UPDATE products SET name=$1, description=$2, price=$3, category=$4, image=$5, stock=$6 WHERE id=$7`,
+		product.Name, product.Description, product.Price, product.Category, product.Image, product.Stock, id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Success: false,
+			Error:   "Failed to update product",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		c.JSON(http.StatusNotFound, ErrorResponse{
+			Success: false,
+			Error:   "Product not found",
+		})
+		return
+	}
+
+	product.ID = id
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data":    product,
+		"message": "Product updated successfully",
+	})
+}
