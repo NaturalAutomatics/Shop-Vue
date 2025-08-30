@@ -21,7 +21,7 @@ if (Test-Port -Port 5000) {
 }
 
 Write-Host "📦 Starting Frontend (Vue.js) on http://localhost:3000..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot'; npm run dev" -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend-vue'; npm run dev" -WindowStyle Normal
 
 Write-Host "⏳ Waiting 3 seconds for frontend to initialize..." -ForegroundColor Yellow
 Start-Sleep -Seconds 3

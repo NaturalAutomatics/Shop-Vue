@@ -1,39 +1,21 @@
 {
   "name": "vue-shop",
   "version": "1.0.0",
-  "description": "A Vue.js shop website for learning Vue after Angular",
-  "main": "index.js",
+  "description": "Full-stack Vue.js e-commerce application with Go backend",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc && vite build",
-    "preview": "vite preview",
-    "type-check": "vue-tsc --noEmit",
-    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "dev:frontend": "cd frontend-vue && npm run dev",
+    "dev:backend": "cd backend-go && go run .",
+    "build": "npm run build:frontend && npm run build:backend",
+    "build:frontend": "cd frontend-vue && npm run build",
+    "build:backend": "cd backend-go && go build -o vue-shop-backend.exe",
     "start": "powershell -ExecutionPolicy Bypass -File start-full-stack.ps1",
-    "start:app": "powershell -ExecutionPolicy Bypass -File start-app.ps1",
-    "start:frontend": "vite",
-    "start:backend": "cd backend-go && go run ."
-  },
-  "dependencies": {
-    "pinia": "^2.1.6",
-    "vue": "^3.3.4",
-    "vue-router": "^4.2.4"
+    "install:all": "cd frontend-vue && npm install"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^4.3.4",
-    "@vue/tsconfig": "^0.8.1",
-    "eslint": "^8.47.0",
-    "eslint-plugin-vue": "^9.17.0",
-    "typescript": "^5.9.2",
-    "vite": "^4.4.9",
-    "vue-tsc": "^3.0.6"
+    "concurrently": "^8.2.0"
   },
-  "keywords": [
-    "vue",
-    "shop",
-    "learning",
-    "angular-migration"
-  ],
+  "keywords": ["vue", "go", "postgresql", "e-commerce", "full-stack"],
   "author": "Vue Learner",
   "license": "MIT"
 }

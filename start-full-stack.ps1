@@ -71,7 +71,7 @@ Start-Sleep -Seconds 5
 
 # 5. Start Frontend (Vue.js)
 Write-Host "Starting Frontend (Vue.js) on http://localhost:3000..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot'; npm run dev" -WindowStyle Normal
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$PSScriptRoot\frontend-vue'; npm run dev" -WindowStyle Normal
 
 Write-Host ""
 Write-Host "Full stack application is starting..." -ForegroundColor Green
