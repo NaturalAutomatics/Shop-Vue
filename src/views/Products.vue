@@ -24,6 +24,7 @@
         v-for="product in filteredProducts" 
         :key="product.id" 
         class="product-card"
+        @click="goToProduct(product.id)"
       >
         <div class="product-image">
           <img :src="product.image" :alt="product.name" />
@@ -52,6 +53,7 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCartStore } from '../stores/cart'
 import apiService from '../services/api'
 
@@ -65,7 +67,8 @@ export default {
     const loading = ref(false)
     const error = ref(null)
     
-    // Store
+    // Router and Store
+    const router = useRouter()
     const cartStore = useCartStore()
     
     // Computed properties
@@ -106,6 +109,10 @@ export default {
       }
     }
     
+    const goToProduct = (productId) => {
+      router.push(`/products/${productId}`)
+    }
+    
     // Lifecycle hook - similar to Angular's ngOnInit
     onMounted(() => {
       fetchProducts()
@@ -120,7 +127,8 @@ export default {
       error,
       addToCart,
       isInCart,
-      fetchProducts
+      fetchProducts,
+      goToProduct
     }
   }
 }
@@ -182,6 +190,7 @@ export default {
   overflow: hidden;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
 }
 
 .product-card:hover {
