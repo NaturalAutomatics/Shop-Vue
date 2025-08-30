@@ -1,9 +1,12 @@
 # Dependencies
 node_modules/
+frontend-vue/node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+package-lock.json
+frontend-vue/package-lock.json
 
 # Build outputs
 dist/

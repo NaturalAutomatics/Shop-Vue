@@ -70,6 +70,7 @@ npm start
 
 2. **Start Frontend**
    ```bash
+   cd frontend-vue
    npm run dev
    ```
 
@@ -117,16 +118,21 @@ Access the built-in database administration panel at `/admin/database` (requires
 ## 🔧 Development Commands
 
 ```bash
-# Frontend
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run preview      # Preview production build
+# Root Level
+npm run dev              # Start both frontend and backend
+npm run build            # Build both parts
+npm run install:all      # Install frontend dependencies
 
-# Backend
-cd backend-go
-go run .             # Run backend
+# Frontend (in frontend-vue/)
+npm run dev              # Start development server
+npm run build            # Build for production
+npm run type-check       # TypeScript checking
+npm run preview          # Preview production build
+
+# Backend (in backend-go/)
+go run .                 # Run backend
 go build -o vue-shop-backend.exe  # Build executable
-go mod tidy          # Update dependencies
+go mod tidy              # Update dependencies
 
 # Database
 cd backend-go
@@ -156,20 +162,25 @@ powershell -ExecutionPolicy Bypass -File setup-db.ps1  # Setup database
 
 ```
 Shop/
-├── src/                    # Vue.js frontend source
-│   ├── views/             # Page components
-│   ├── stores/            # Pinia state management
-│   ├── services/          # API services
-│   └── router/            # Vue Router configuration
-├── backend-go/            # Go backend source
-│   ├── db.go             # Database connection & migrations
-│   ├── admin.go          # Admin API endpoints
-│   ├── handlers.go       # Main API handlers
-│   ├── models.go         # Data structures
-│   └── main.go           # Server entry point
-├── setup-db.ps1          # Database setup script
-├── start-app.ps1         # Application startup script
-└── README.md             # This file
+├── frontend-vue/          # Vue.js frontend
+│   ├── src/              # Vue source code
+│   │   ├── views/        # Page components
+│   │   ├── stores/       # Pinia state management
+│   │   ├── services/     # API services
+│   │   ├── types/        # TypeScript interfaces
+│   │   └── router/       # Vue Router configuration
+│   ├── package.json      # Frontend dependencies
+│   ├── tsconfig.json     # TypeScript configuration
+│   └── vite.config.js    # Vite build configuration
+├── backend-go/           # Go backend
+│   ├── db.go            # Database connection & migrations
+│   ├── admin.go         # Admin API endpoints
+│   ├── handlers.go      # Main API handlers
+│   ├── models.go        # Data structures
+│   └── main.go          # Server entry point
+├── package.json         # Root project management
+├── start-full-stack.ps1 # Full stack startup script
+└── README.md            # This file
 ```
 
 ## 🔐 Security Features
