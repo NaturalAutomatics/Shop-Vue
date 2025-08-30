@@ -206,7 +206,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import apiService from '../services/api.js'
+import apiService from '../services/api'
 import ProductForm from './ProductForm.vue'
 
 // Reactive state

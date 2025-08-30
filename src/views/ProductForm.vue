@@ -98,7 +98,7 @@
 
 <script setup>
 import { ref, reactive, watch } from 'vue'
-import apiService from '../services/api.js'
+import apiService from '../services/api'
 
 const props = defineProps({
   product: {

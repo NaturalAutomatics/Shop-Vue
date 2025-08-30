@@ -1,5 +1,7 @@
+import type { Product, User, Order, ApiResponse } from '@/types'
+
 // API service for backend communication
-const API_BASE_URL = 'http://localhost:5000/api';
+const API_BASE_URL = 'http://localhost:5000/api'
 
 class ApiService {
   // Get auth token from localStorage
@@ -52,18 +54,18 @@ class ApiService {
   }
 
   // Product endpoints
-  async getProducts(params = {}) {
-    const queryString = new URLSearchParams(params).toString();
-    const endpoint = `/products${queryString ? `?${queryString}` : ''}`;
-    return this.request(endpoint);
+  async getProducts(params: Record<string, string> = {}): Promise<ApiResponse<Product[]>> {
+    const queryString = new URLSearchParams(params).toString()
+    const endpoint = `/products${queryString ? `?${queryString}` : ''}`
+    return this.request(endpoint)
   }
 
-  async getProduct(id) {
-    return this.request(`/products/${id}`);
+  async getProduct(id: number | string): Promise<ApiResponse<Product>> {
+    return this.request(`/products/${id}`)
   }
 
-  async getCategories() {
-    return this.request('/products/categories');
+  async getCategories(): Promise<ApiResponse<string[]>> {
+    return this.request('/products/categories')
   }
 
   // Order endpoints
