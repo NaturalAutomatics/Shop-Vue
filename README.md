@@ -42,9 +42,9 @@ A modern e-commerce application built with Vue.js 3 frontend and Go backend, fea
    ```bash
    $env:PGHOST="localhost"
    $env:PGPORT="5432"
-   $env:PGUSER="vueshop"
-   $env:PGPASSWORD="vueshop123"
-   $env:PGDATABASE="vueshop"
+   $env:PGUSER="user"
+   $env:PGPASSWORD="password"
+   $env:PGDATABASE="user"
    ```
 
 ### Database Connection Details
